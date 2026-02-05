@@ -1,0 +1,10 @@
+[project]
+name = "storyline-translation-merge-backend"
+version = "0.1.0"
+description = "FastAPI backend for merging Storyline translation DOCX files."
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi[all]",
+  "python-docx",
+]
+

@@ -1,4 +1,32 @@
-# Deploy FastAPI on Render
+# Storyline Translation Merge
+
+## Local Development (uv)
+
+From the repo root:
+
+```bash
+cd backend
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Quick curl test (local)
+
+```bash
+curl -s http://localhost:8000/
+```
+
+```bash
+curl -X POST \
+  -F "original_file=@/path/to/original.docx" \
+  -F "translated_file=@/path/to/translated.docx" \
+  -o /tmp/translated_merged.docx \
+  http://localhost:8000/merge
+```
+
+## Deploy FastAPI on Render
 
 Use this repo as a template to deploy a Python [FastAPI](https://fastapi.tiangolo.com) service on Render.
 
