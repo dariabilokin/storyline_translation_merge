@@ -22,6 +22,7 @@ Optional:
 - `ACCESS_TOKEN_EXPIRE_MINUTES` (default: `60`)
 - `MAX_USERS` (default: `10`)
 - `MAX_UPLOAD_MB` (default: `20`)
+- `RATE_LIMIT_PER_MINUTE` (default: `5`)
 - `BOOTSTRAP_ADMIN_EMAIL`
 - `BOOTSTRAP_ADMIN_PASSWORD`
 

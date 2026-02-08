@@ -5,13 +5,31 @@ from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette.responses import StreamingResponse
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
-from backend.auth import create_access_token, get_current_user, get_password_hash, verify_password, require_admin
+from backend.auth import (
+    create_access_token,
+    get_current_user,
+    get_password_hash,
+    rate_limit_key,
+    require_admin,
+    verify_password,
+)
 from backend.db import Base, engine, get_db
 from backend.models import User
 from backend.services.merge_service import merge_docs_in_memory
 
 app = FastAPI()
+limiter = Limiter(key_func=rate_limit_key, default_limits=[])
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
+
+
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_handler(request, exc):
+    return limiter._rate_limit_exceeded_handler(request, exc)
 
 
 @app.get("/")
@@ -89,6 +107,7 @@ def invite_user(payload: InviteRequest, db: Session = Depends(get_db), _: User =
 
 
 @app.post("/merge")
+@limiter.limit(f"{int(os.getenv('RATE_LIMIT_PER_MINUTE', '5'))}/minute")
 async def merge_docs(
     original_file: UploadFile = File(...),
     translated_file: UploadFile = File(...),
