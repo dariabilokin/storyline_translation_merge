@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from starlette.responses import StreamingResponse
@@ -25,6 +26,15 @@ app = FastAPI()
 limiter = Limiter(key_func=rate_limit_key, default_limits=[])
 app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
+
+cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if origin.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(RateLimitExceeded)

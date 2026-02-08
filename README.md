@@ -12,6 +12,19 @@ uv pip install -r requirements.txt
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+## Frontend (Next.js)
+
+From the repo root:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Environment:
+- Copy `frontend/.env.example` to `frontend/.env.local` and update `NEXT_PUBLIC_API_BASE` if needed.
+
 ### Environment variables
 
 Required (auth + database):
@@ -23,6 +36,7 @@ Optional:
 - `MAX_USERS` (default: `10`)
 - `MAX_UPLOAD_MB` (default: `20`)
 - `RATE_LIMIT_PER_MINUTE` (default: `5`)
+- `CORS_ORIGINS` (default: `http://localhost:3000`)
 - `BOOTSTRAP_ADMIN_EMAIL`
 - `BOOTSTRAP_ADMIN_PASSWORD`
 
