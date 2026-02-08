@@ -19,7 +19,7 @@ if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY is not set.")
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
