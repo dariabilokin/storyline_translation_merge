@@ -12,6 +12,21 @@ uv pip install -r requirements.txt
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+### Environment variables
+
+Required (auth + database):
+- `DATABASE_URL`
+- `SECRET_KEY`
+
+Optional:
+- `ACCESS_TOKEN_EXPIRE_MINUTES` (default: `60`)
+- `MAX_USERS` (default: `10`)
+- `MAX_UPLOAD_MB` (default: `20`)
+- `BOOTSTRAP_ADMIN_EMAIL`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+
+If `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` are set, the app will create an admin user on startup if one doesn't already exist.
+
 ### Quick curl test (local)
 
 ```bash

@@ -6,5 +6,8 @@ requires-python = ">=3.10"
 dependencies = [
   "fastapi[all]",
   "python-docx",
+  "sqlalchemy>=2.0",
+  "psycopg2-binary",
+  "python-jose[cryptography]",
+  "passlib[bcrypt]",
 ]
-
