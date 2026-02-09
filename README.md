@@ -38,6 +38,9 @@ Optional:
 - `RATE_LIMIT_PER_MINUTE` (default: `5`)
 - `LOGIN_RATE_LIMIT_PER_MINUTE` (default: `10`)
 - `CORS_ORIGINS` (default: `http://localhost:3000`)
+- `COOKIE_NAME` (default: `stm_auth`)
+- `COOKIE_SECURE` (default: `false`)
+- `COOKIE_SAMESITE` (default: `lax`)
 - `BOOTSTRAP_ADMIN_EMAIL`
 - `BOOTSTRAP_ADMIN_PASSWORD`
 

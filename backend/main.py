@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import re
 
-from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File, status
+from fastapi import Depends, FastAPI, HTTPException, Request, Response, UploadFile, File, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -18,6 +18,7 @@ from backend.auth import (
     rate_limit_key,
     require_admin,
     verify_password,
+    COOKIE_NAME,
 )
 from backend.db import Base, engine, get_db
 from backend.models import User
@@ -87,13 +88,25 @@ def on_startup():
 
 @app.post("/auth/login")
 @limiter.limit(f"{int(os.getenv('LOGIN_RATE_LIMIT_PER_MINUTE', '10'))}/minute")
-def login(payload: LoginRequest, db: Session = Depends(get_db)):
+def login(request: Request, payload: LoginRequest, response: Response, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials.")
 
     token = create_access_token(user.email)
-    return {"access_token": token, "token_type": "bearer"}
+    cookie_secure = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+    cookie_samesite = os.getenv("COOKIE_SAMESITE", "lax").lower()
+    if cookie_samesite not in {"lax", "strict", "none"}:
+        cookie_samesite = "lax"
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=cookie_secure,
+        samesite=cookie_samesite,
+        path="/",
+    )
+    return {"status": "ok"}
 
 
 @app.post("/auth/invite")
@@ -116,6 +129,17 @@ def invite_user(payload: InviteRequest, db: Session = Depends(get_db), _: User =
     )
     db.commit()
     return {"status": "invited"}
+
+
+@app.post("/auth/logout")
+def logout(response: Response):
+    response.delete_cookie(key=COOKIE_NAME, path="/")
+    return {"status": "ok"}
+
+
+@app.get("/auth/me")
+def me(current_user: User = Depends(get_current_user)):
+    return {"email": current_user.email, "is_admin": current_user.is_admin}
 
 
 @app.post("/merge")

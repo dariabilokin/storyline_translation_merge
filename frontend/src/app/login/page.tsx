@@ -16,10 +16,14 @@ export default function LoginPage() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      router.push("/");
-    }
+    fetch(`${API_BASE}/auth/me`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.email) {
+          router.push("/");
+        }
+      })
+      .catch(() => null);
   }, [router]);
 
   const handleLogin = async () => {
@@ -29,13 +33,12 @@ export default function LoginPage() {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       });
       if (!res.ok) {
         throw new Error("Invalid credentials.");
       }
-      const data = await res.json();
-      localStorage.setItem("auth_token", data.access_token);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed.");

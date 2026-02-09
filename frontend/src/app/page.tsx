@@ -14,7 +14,7 @@ const formatBytes = (bytes: number) => {
 };
 
 export default function Home() {
-  const [token, setToken] = useState<string | null>(null);
+  const [isAuthed, setIsAuthed] = useState(false);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [translatedFile, setTranslatedFile] = useState<File | null>(null);
   const [dragOriginal, setDragOriginal] = useState(false);
@@ -28,17 +28,21 @@ export default function Home() {
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem("auth_token");
-    if (stored) {
-      setToken(stored);
-    }
+    fetch(`${API_BASE}/auth/me`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.email) {
+          setIsAuthed(true);
+        }
+      })
+      .catch(() => null);
   }, []);
 
   const canMerge = useMemo(() => originalFile && translatedFile, [originalFile, translatedFile]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("auth_token");
-    setToken(null);
+  const handleLogout = async () => {
+    await fetch(`${API_BASE}/auth/logout`, { method: "POST", credentials: "include" });
+    setIsAuthed(false);
     setOriginalFile(null);
     setTranslatedFile(null);
     setSuccess("");
@@ -61,7 +65,7 @@ export default function Home() {
   };
 
   const handleMerge = async () => {
-    if (!token || !originalFile || !translatedFile) return;
+    if (!isAuthed || !originalFile || !translatedFile) return;
     setLoading(true);
     setError("");
     setSuccess("");
@@ -72,7 +76,7 @@ export default function Home() {
 
       const res = await fetch(`${API_BASE}/merge`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
         body: form,
       });
 
@@ -125,7 +129,7 @@ export default function Home() {
               Invite-only workspace to merge Storyline translation tables.
             </div>
           </div>
-          {token ? (
+          {isAuthed ? (
             <button className="button secondary" onClick={handleLogout}>
               Log out
             </button>
@@ -224,7 +228,7 @@ export default function Home() {
           </div>
 
           <div className="actions" style={{ marginTop: "22px" }}>
-            <button className="button" onClick={handleMerge} disabled={!canMerge || loading || !token}>
+            <button className="button" onClick={handleMerge} disabled={!canMerge || loading || !isAuthed}>
               {loading ? "Merging..." : "Merge & download"}
             </button>
             <button
@@ -238,7 +242,7 @@ export default function Home() {
             >
               Clear files
             </button>
-            {!token ? (
+            {!isAuthed ? (
               <Link className="button secondary" href="/login">
                 Log in to merge
               </Link>
@@ -246,7 +250,7 @@ export default function Home() {
             {error ? <div className="error">{error}</div> : null}
             {success ? <div className="success">{success}</div> : null}
           </div>
-          {!token ? (
+          {!isAuthed ? (
             <div className="helper" style={{ marginTop: "12px" }}>
               This tool is invite-only. Contact the admin for access.
             </div>
