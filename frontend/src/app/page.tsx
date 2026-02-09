@@ -1,6 +1,7 @@
 "use client";
 
 import type { DragEvent } from "react";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
@@ -14,8 +15,6 @@ const formatBytes = (bytes: number) => {
 
 export default function Home() {
   const [token, setToken] = useState<string | null>(null);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [translatedFile, setTranslatedFile] = useState<File | null>(null);
   const [dragOriginal, setDragOriginal] = useState(false);
@@ -25,8 +24,10 @@ export default function Home() {
   const [success, setSuccess] = useState("");
   const originalInputRef = useRef<HTMLInputElement | null>(null);
   const translatedInputRef = useRef<HTMLInputElement | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const stored = localStorage.getItem("auth_token");
     if (stored) {
       setToken(stored);
@@ -34,30 +35,6 @@ export default function Home() {
   }, []);
 
   const canMerge = useMemo(() => originalFile && translatedFile, [originalFile, translatedFile]);
-
-  const handleLogin = async () => {
-    setError("");
-    setSuccess("");
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) {
-        throw new Error("Invalid credentials.");
-      }
-      const data = await res.json();
-      localStorage.setItem("auth_token", data.access_token);
-      setToken(data.access_token);
-      setPassword("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token");
@@ -126,6 +103,18 @@ export default function Home() {
     }
   };
 
+  if (!mounted) {
+    return (
+      <div className="page">
+        <div className="shell">
+          <div className="panel">
+            <div className="helper">Loading…</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page">
       <div className="shell">
@@ -140,143 +129,129 @@ export default function Home() {
             <button className="button secondary" onClick={handleLogout}>
               Log out
             </button>
-          ) : null}
+          ) : (
+            <Link className="button secondary" href="/login">
+              Log in
+            </Link>
+          )}
         </div>
 
-        {!token ? (
-          <div className="panel login-panel">
-            <div className="stack">
-              <div>
-                <div className="label">Email</div>
-                <input
-                  className="input"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
-              <div>
-                <div className="label">Password</div>
-                <input
-                  className="input"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="••••••••"
-                />
-              </div>
-              <button className="button" onClick={handleLogin} disabled={loading}>
-                {loading ? "Signing in..." : "Sign in"}
-              </button>
-              {error ? <div className="error">{error}</div> : null}
-              <div className="helper">
-                This tool is invite-only. Contact the admin for access.
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="panel">
-            <div className="drop-grid">
-              <div
-                className={`dropzone ${dragOriginal ? "dragging" : ""}`}
-                onClick={() => originalInputRef.current?.click()}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragOriginal(true);
-                }}
-                onDragLeave={() => setDragOriginal(false)}
-                onDrop={(event) => {
-                  setDragOriginal(false);
-                  onDrop(event, (file) => setOriginalFile(file));
-                }}
-              >
-                <div className="dropzone-title">Original file</div>
-                <div className="helper">Drop the source .docx here or click to select.</div>
-                {originalFile ? (
-                  <div className="file-pill">
-                    {originalFile.name} · {formatBytes(originalFile.size)}
-                  </div>
-                ) : null}
-                <button
-                  className="button secondary"
-                  type="button"
-                  onClick={() => originalInputRef.current?.click()}
-                >
-                  Choose file
-                </button>
-                <input
-                  ref={originalInputRef}
-                  type="file"
-                  accept=".docx"
-                  style={{ display: "none" }}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) selectFile(file, (selected) => setOriginalFile(selected));
-                  }}
-                />
-              </div>
-
-              <div
-                className={`dropzone ${dragTranslated ? "dragging" : ""}`}
-                onClick={() => translatedInputRef.current?.click()}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setDragTranslated(true);
-                }}
-                onDragLeave={() => setDragTranslated(false)}
-                onDrop={(event) => {
-                  setDragTranslated(false);
-                  onDrop(event, (file) => setTranslatedFile(file));
-                }}
-              >
-                <div className="dropzone-title">Translation file</div>
-                <div className="helper">Drop the translated .docx here or click to select.</div>
-                {translatedFile ? (
-                  <div className="file-pill">
-                    {translatedFile.name} · {formatBytes(translatedFile.size)}
-                  </div>
-                ) : null}
-                <button
-                  className="button secondary"
-                  type="button"
-                  onClick={() => translatedInputRef.current?.click()}
-                >
-                  Choose file
-                </button>
-                <input
-                  ref={translatedInputRef}
-                  type="file"
-                  accept=".docx"
-                  style={{ display: "none" }}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) selectFile(file, (selected) => setTranslatedFile(selected));
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="actions" style={{ marginTop: "22px" }}>
-              <button className="button" onClick={handleMerge} disabled={!canMerge || loading}>
-                {loading ? "Merging..." : "Merge & download"}
-              </button>
+        <div className="panel">
+          <div className="drop-grid">
+            <div
+              className={`dropzone ${dragOriginal ? "dragging" : ""}`}
+              onClick={() => originalInputRef.current?.click()}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragOriginal(true);
+              }}
+              onDragLeave={() => setDragOriginal(false)}
+              onDrop={(event) => {
+                setDragOriginal(false);
+                onDrop(event, (file) => setOriginalFile(file));
+              }}
+            >
+              <div className="dropzone-title">Original file</div>
+              <div className="helper">Drop the source .docx here or click to select.</div>
+              {originalFile ? (
+                <div className="file-pill">
+                  {originalFile.name} · {formatBytes(originalFile.size)}
+                </div>
+              ) : null}
               <button
                 className="button secondary"
-                onClick={() => {
-                  setOriginalFile(null);
-                  setTranslatedFile(null);
-                  setError("");
-                  setSuccess("");
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  originalInputRef.current?.click();
                 }}
               >
-                Clear files
+                Choose file
               </button>
-              {error ? <div className="error">{error}</div> : null}
-              {success ? <div className="success">{success}</div> : null}
+              <input
+                ref={originalInputRef}
+                type="file"
+                accept=".docx"
+                style={{ display: "none" }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) selectFile(file, (selected) => setOriginalFile(selected));
+                }}
+              />
+            </div>
+
+            <div
+              className={`dropzone ${dragTranslated ? "dragging" : ""}`}
+              onClick={() => translatedInputRef.current?.click()}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragTranslated(true);
+              }}
+              onDragLeave={() => setDragTranslated(false)}
+              onDrop={(event) => {
+                setDragTranslated(false);
+                onDrop(event, (file) => setTranslatedFile(file));
+              }}
+            >
+              <div className="dropzone-title">Translation file</div>
+              <div className="helper">Drop the translated .docx here or click to select.</div>
+              {translatedFile ? (
+                <div className="file-pill">
+                  {translatedFile.name} · {formatBytes(translatedFile.size)}
+                </div>
+              ) : null}
+              <button
+                className="button secondary"
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  translatedInputRef.current?.click();
+                }}
+              >
+                Choose file
+              </button>
+              <input
+                ref={translatedInputRef}
+                type="file"
+                accept=".docx"
+                style={{ display: "none" }}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) selectFile(file, (selected) => setTranslatedFile(selected));
+                }}
+              />
             </div>
           </div>
-        )}
+
+          <div className="actions" style={{ marginTop: "22px" }}>
+            <button className="button" onClick={handleMerge} disabled={!canMerge || loading || !token}>
+              {loading ? "Merging..." : "Merge & download"}
+            </button>
+            <button
+              className="button secondary"
+              onClick={() => {
+                setOriginalFile(null);
+                setTranslatedFile(null);
+                setError("");
+                setSuccess("");
+              }}
+            >
+              Clear files
+            </button>
+            {!token ? (
+              <Link className="button secondary" href="/login">
+                Log in to merge
+              </Link>
+            ) : null}
+            {error ? <div className="error">{error}</div> : null}
+            {success ? <div className="success">{success}</div> : null}
+          </div>
+          {!token ? (
+            <div className="helper" style={{ marginTop: "12px" }}>
+              This tool is invite-only. Contact the admin for access.
+            </div>
+          ) : null}
+        </div>
 
         <div className="footer">
           API: {API_BASE} · Files are processed in-memory and returned immediately.
