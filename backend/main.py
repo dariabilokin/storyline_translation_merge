@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import re
 
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -85,6 +86,7 @@ def on_startup():
 
 
 @app.post("/auth/login")
+@limiter.limit(f"{int(os.getenv('LOGIN_RATE_LIMIT_PER_MINUTE', '10'))}/minute")
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
     if not user or not verify_password(payload.password, user.password_hash):
@@ -134,17 +136,35 @@ async def merge_docs(
     max_upload_mb = int(os.getenv("MAX_UPLOAD_MB", "20"))
     max_upload_bytes = max_upload_mb * 1024 * 1024
 
+    def validate_docx(upload: UploadFile, label: str) -> None:
+        filename = (upload.filename or "").lower()
+        if not filename.endswith(".docx"):
+            raise HTTPException(status_code=400, detail=f"{label} must be a .docx file.")
+        content_type = (upload.content_type or "").lower()
+        if content_type and content_type not in {
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/octet-stream",
+        }:
+            raise HTTPException(status_code=400, detail=f"{label} has an invalid content type.")
+
+    validate_docx(original_file, "Original file")
+    validate_docx(translated_file, "Translated file")
+
     original_bytes = await original_file.read()
     translated_bytes = await translated_file.read()
 
     if len(original_bytes) > max_upload_bytes or len(translated_bytes) > max_upload_bytes:
         raise HTTPException(status_code=413, detail="File too large.")
 
-    merged = merge_docs_in_memory(file_a_bytes=original_bytes, file_b_bytes=translated_bytes)
+    try:
+        merged = merge_docs_in_memory(file_a_bytes=original_bytes, file_b_bytes=translated_bytes)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to parse DOCX files.")
 
     translated_name = translated_file.filename or "translated.docx"
     translated_path = Path(translated_name)
-    output_name = f"{translated_path.stem}_merged{translated_path.suffix or '.docx'}"
+    safe_stem = re.sub(r"[^A-Za-z0-9._-]", "_", translated_path.stem) or "translated"
+    output_name = f"{safe_stem}_merged.docx"
 
     return StreamingResponse(
         merged,

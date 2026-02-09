@@ -36,6 +36,7 @@ Optional:
 - `MAX_USERS` (default: `10`)
 - `MAX_UPLOAD_MB` (default: `20`)
 - `RATE_LIMIT_PER_MINUTE` (default: `5`)
+- `LOGIN_RATE_LIMIT_PER_MINUTE` (default: `10`)
 - `CORS_ORIGINS` (default: `http://localhost:3000`)
 - `BOOTSTRAP_ADMIN_EMAIL`
 - `BOOTSTRAP_ADMIN_PASSWORD`
