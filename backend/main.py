@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, status
+from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile, File, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -119,6 +119,7 @@ def invite_user(payload: InviteRequest, db: Session = Depends(get_db), _: User =
 @app.post("/merge")
 @limiter.limit(f"{int(os.getenv('RATE_LIMIT_PER_MINUTE', '5'))}/minute")
 async def merge_docs(
+    request: Request,
     original_file: UploadFile = File(...),
     translated_file: UploadFile = File(...),
     _: User = Depends(get_current_user),
