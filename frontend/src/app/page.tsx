@@ -253,9 +253,7 @@ export default function Home() {
           ) : null}
         </div>
 
-        <div className="footer">
-          API: {API_BASE} · Files are processed in-memory and returned immediately.
-        </div>
+        <div className="footer">Files are processed in-memory and returned immediately.</div>
       </div>
     </div>
   );
