@@ -1,4 +1,66 @@
-# Deploy FastAPI on Render
+# Storyline Translation Merge
+
+## Local Development (uv)
+
+From the repo root:
+
+```bash
+cd backend
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+## Frontend (Next.js)
+
+From the repo root:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Environment:
+- Copy `frontend/.env.example` to `frontend/.env.local` and update `NEXT_PUBLIC_API_BASE` if needed.
+
+### Environment variables
+
+Required (auth + database):
+- `DATABASE_URL`
+- `SECRET_KEY`
+
+Optional:
+- `ACCESS_TOKEN_EXPIRE_MINUTES` (default: `60`)
+- `MAX_USERS` (default: `10`)
+- `MAX_UPLOAD_MB` (default: `20`)
+- `RATE_LIMIT_PER_MINUTE` (default: `5`)
+- `LOGIN_RATE_LIMIT_PER_MINUTE` (default: `10`)
+- `CORS_ORIGINS` (default: `http://localhost:3000`)
+- `COOKIE_NAME` (default: `stm_auth`)
+- `COOKIE_SECURE` (default: `false`)
+- `COOKIE_SAMESITE` (default: `lax`)
+- `BOOTSTRAP_ADMIN_EMAIL`
+- `BOOTSTRAP_ADMIN_PASSWORD`
+
+If `BOOTSTRAP_ADMIN_EMAIL` and `BOOTSTRAP_ADMIN_PASSWORD` are set, the app will create an admin user on startup if one doesn't already exist.
+
+### Quick curl test (local)
+
+```bash
+curl -s http://localhost:8000/
+```
+
+```bash
+curl -X POST \
+  -F "original_file=@/path/to/original.docx" \
+  -F "translated_file=@/path/to/translated.docx" \
+  -o /tmp/translated_merged.docx \
+  http://localhost:8000/merge
+```
+
+## Deploy FastAPI on Render
 
 Use this repo as a template to deploy a Python [FastAPI](https://fastapi.tiangolo.com) service on Render.
 
